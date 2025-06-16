@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import "./Navbar.css"; // Import your CSS styles
 import linkedin from './linkedin.png'
 import github from './github.png'
-import myphoto from './my_pho.png'
-import aboutme from './full_size_photo.jpg'
 import menu from './menu.png'
 import axios from "axios";
 import gmail from './gmail.png'
@@ -43,26 +41,6 @@ const projectsData= [
 
 
 const Profile = () => {
-  const Experience = [
-    {
-      title: 'Web Development',
-      description:
-        'I build user-friendly web apps (like E-com,E-learning) and fun browser games using HTML/CSS, JavaScript. I focus on clean design and smooth interactions.',
-      icon: '📱', // You can replace this with an actual icon component or image
-    },
-    {
-      title: 'AI Base Web',
-      description:
-        'Experienced in AI-based web development, building voice-enabled portfolios and AI-powered code integration. Skilled in creating interactive websites that use voice assistance for a better user experience.',
-      icon: '🤖', // Replace with an icon
-    },
-    {
-      title: 'Python (DSA)',
-      description:
-        'Skilled in Python Data Structures and Algorithms, with a strong understanding of problem-solving and optimization. Experienced in writing efficient code for complex challenges.',
-      icon: '💻', // Replace with an icon
-    },
-  ];
     const openResume = () => {
       window.open("./assets/resume-example.pdf");
     };
@@ -167,9 +145,6 @@ const Profile = () => {
       alert("Failed to submit the form.");
     }
   }
-
-
-
   const handleMenuToggle = () => {
     setMenuVisible(!menuVisible);
   };
@@ -177,6 +152,118 @@ const Profile = () => {
     document.getElementById(sectionId).scrollIntoView({ behavior: "smooth" });
     setMenuVisible(false);
   };
+const [profilePhoto, setProfilePhoto] = useState(null); // Start with null
+
+useEffect(() => {
+  const fetchProfilePhoto = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:5000/get-smallimage/myphoto', {
+        responseType: 'blob' // Important for binary data
+      });
+      
+      // Create a URL from the blob data
+      const imageUrl = URL.createObjectURL(response.data);
+      setProfilePhoto(imageUrl);
+    } catch (error) {
+      console.error("Error fetching profile photo:", error);
+      // Don't set any fallback - will show nothing or placeholder
+    }
+  };
+  
+  fetchProfilePhoto();
+
+  // Clean up the object URL when component unmounts
+  return () => {
+    if (profilePhoto) {
+      URL.revokeObjectURL(profilePhoto);
+    }
+  };
+}, []); 
+const [fullSizePhoto, setFullSizePhoto] = useState(null);
+
+  useEffect(() => {
+    const fetchFullSizePhoto = async () => {
+      try {
+        const response = await axios.get('http://127.0.0.1:5000/get_largeimage/Fullsizephone', {
+          responseType: 'blob'
+        });
+        const imageUrl = URL.createObjectURL(response.data);
+        setFullSizePhoto(imageUrl);
+      } catch (error) {
+        console.error("Error fetching full size photo:", error);
+        // You can set a default image here if you want
+      }
+    };
+    
+    fetchFullSizePhoto();
+
+    return () => {
+      if (fullSizePhoto) {
+        URL.revokeObjectURL(fullSizePhoto);
+      }
+    };
+  }, []);
+  const [aboutParagraph, setAboutParagraph] = useState("");
+  const fetchAboutParagraph = async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:5000/get-para');
+    setAboutParagraph(response.data.paragraph);
+  } catch (error) {
+    console.error("Error fetching about paragraph:", error);
+    setAboutParagraph("A passionate full-stack developer with expertise in front-end technologies..."); // Fallback text
+  }
+};useEffect(() => {
+  fetchAboutParagraph();
+}, []);  const [skills, setSkills] = useState([]);
+
+  const fetchSkills = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:5000/get-skills');
+      setSkills(response.data.skills);
+    } catch (error) {
+      console.error("Error fetching skills:", error);
+      // Fallback skills
+      setSkills([
+        { title: "Web Development", description: "Web app Development" },
+        { title: "Python Developer", description: "problem-solving skills" }
+      ]);
+    }
+  }; useEffect(() => {
+    fetchSkills();
+  }, []); 
+  const [experiences, setExperiences] = useState([]);
+const fetchExperiences = async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:5000/get-experience');
+    setExperiences(response.data.experiences);
+  } catch (error) {
+    console.error("Error fetching experiences:", error);
+};
+}
+useEffect(() => {
+    fetchExperiences();
+  }, []);
+const [projects, setProjects] = useState([]);
+
+const fetchProjects = async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:5000/get-projects');
+    const projectsWithImages = response.data.projects.map(project => ({
+      ...project,
+      // Make sure to include the proper data URL prefix
+      Image: project.imageBase64 ? `data:image/jpeg;base64,${project.imageBase64}` : ''
+    }));
+    setProjects(projectsWithImages);
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    // Fallback to local projects if API fails
+    setProjects(projectsData);
+  }
+};
+
+useEffect(() => {
+  fetchProjects();
+}, []);
   return (
     <>
       <header className="header">
@@ -230,20 +317,24 @@ const Profile = () => {
         if you want to learn more about me, say 'about me.'</h6>
    <section id="profile">
       <div className="section__pic-container">
-        <img
-          src={myphoto}
-          alt="John Doe profile picture"
-        />
-      </div>
+  <img 
+    src={profilePhoto} 
+    alt="Santhosh Raj profile picture" 
+    onError={(e) => {
+      e.target.onerror = null; 
+      e.target.src = '';
+    }}
+  />
+</div>
       <div className="section__text">
         <p className="section__text__p1">Hello, I'm</p>
         <h1 className="title">Santhosh Raj</h1>
         <p className="section__text__p2">Web Developer</p>
         <div className="btn-container">
-          <button className="btn btn-color-2" onClick={openResume}>
-            Download CV
-          </button>
-          <button className="btn btn-color-2" onClick={goToContact}>
+          <a href="http://localhost:5000/download-resume" download>
+  <button className="btn btn-color-2">Download CV</button>
+</a>
+          <button className="btn btn-color-2">
             Contact Info
           </button>
         </div>
@@ -272,57 +363,76 @@ const Profile = () => {
 </section>
 <section id="about-us">
 <div className="fullform">
-  <img
-    src={aboutme}
-    alt="Profile"
-  />
+ <img
+            src={fullSizePhoto}
+            alt="Profile"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = ''; // You can set a fallback image here if needed
+            }}
+          />
   <div className="content">
     <h1>About Me</h1>
-    <p>
-    A passionate full-stack developer with expertise in front-end technologies like HTML, CSS, JavaScript, and React.js. Proficient in backend development using MySQL and experienced in API development with Python Flask. Strong problem-solving skills with a solid foundation in Python Data Structures and Algorithms (DSA), ensuring efficient and scalable solutions for web applications.
-    </p>
-    <div className="section skills active">
-      <h3>Web Development</h3>
-      <p>Web app Development</p>
-      <h3>Python Developer</h3>
-      <p>problem-solving skills</p>
-    </div>
+   <p>{aboutParagraph || "Loading..."}</p>
+   <div className="section skills active">
+              {skills.map((skill, index) => (
+                <div key={index}>
+                  <h3>{skill.title}</h3>
+                  <p>{skill.description}</p>
+                </div>
+              ))}
+            </div>
   </div>
 </div>
 
   
 </section>
-<section id="services"><div className="services-section">
-      <h1>Experience</h1>
-      <div className="services-container">
-        {Experience.map((Experience, index) => (
-          <div className="service-box" key={index}>
-            <div className="icon">{Experience.icon}</div>
-            <h3>{Experience.title}</h3>
-            <p>{Experience.description}</p>
-          </div>
-        ))}
-      </div>
-    </div></section>
-<section id="projects">
-<h1 className="prohead">Projects</h1>
-<div className="projects-container">
-      {projectsData.map((project) => (
-        <div key={project.id} className="project-card">
-          <img src={project.Image} alt={project.title} className="project-image" />
-          <h3>{project.title}</h3>
-          <p>{project.description}</p>
-          <div className="button-group">
-            <a href={project.githubLink} target="_blank" rel="noopener noreferrer">
-              <button className="probutton">GitHub</button>
-            </a>
-            <a href={project.liveDemoLink} target="_blank" rel="noopener noreferrer">
-              <button className="probutton">Live-Demo</button>
-            </a>
-          </div>
+<section id="services">
+  <div className="services-section">
+    <h1>Experience</h1>
+    <div className="services-container">
+      {experiences.map((exp, index) => (
+        <div className="service-box" key={index}>
+          <div className="icon">💼</div>
+          <h3>{exp.Companyname}</h3>
+          <p>{exp.ExperienceDetails}</p>
         </div>
       ))}
     </div>
+  </div>
+</section>
+<section id="projects">
+  <h1 className="prohead">Projects</h1>
+  <div className="projects-container">
+    {projects.map((project) => (
+      <div key={project.id} className="project-card">
+        {project.Image ? (
+          <img 
+            src={project.Image} 
+            alt={project.title} 
+            className="project-image"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = ''; // Clear the broken image
+              e.target.style.display = 'none'; // Or show a placeholder
+            }}
+          />
+        ) : (
+          <div className="image-placeholder">No Image Available</div>
+        )}
+        <h3>{project.title}</h3>
+        <p>{project.description}</p>
+        <div className="button-group">
+          <a href={project.githubLink} target="_blank" rel="noopener noreferrer">
+            <button className="probutton">GitHub</button>
+          </a>
+          <a href={project.liveDemoLink} target="_blank" rel="noopener noreferrer">
+            <button className="probutton">Live-Demo</button>
+          </a>
+        </div>
+      </div>
+    ))}
+  </div>
 </section>
 <section id="contact">
 <div className="contact-container">
