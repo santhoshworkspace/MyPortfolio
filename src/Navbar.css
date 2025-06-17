@@ -774,18 +774,18 @@ margin: 0 auto 1rem;
 
 /* Service*/
 
-.services-section {
+.Experience-section {
   text-align: center;
   padding: 50px 20px;
 }
 
-.services-section h1 {
+.Experience-section h1 {
   font-size: 36px;
   margin-bottom: 20px;
   color: #222;
 }
 
-.services-container {
+.Experience-container {
   display: flex;
   justify-content: center;
   gap: 20px;

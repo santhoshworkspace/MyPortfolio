@@ -5,7 +5,7 @@ from bson import Binary
 import hashlib
 import base64
 from io import BytesIO
-import os
+import smtplib
 
 app = Flask(__name__)
 CORS(app)
@@ -279,6 +279,153 @@ def get_projects():
             })
         
         return jsonify({"projects": projects_list})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/Uploadcontactlinks', methods=['POST'])
+def Uploadlink():
+    try:
+        links = ''
+        linkimages = ''
+
+        if request.is_json:
+            data = request.get_json()
+            links = data.get('Links', '')
+            linkimages = data.get('Linkimages', '')
+        else:
+            links = request.form.get('Links', '')
+            image_file = request.files.get('Linkimages')
+            if image_file:
+                linkimages = base64.b64encode(image_file.read()).decode('utf-8')
+
+        if not all([links, linkimages]):
+            return jsonify({'error': 'Missing required fields'}), 400
+
+        link_id = str(collection.count_documents({"type": "LinksData"}) + 1)
+
+        LinksData = {
+            "type": "LinksData",
+            "id": link_id,
+            "links": links,
+            "linkimage": linkimages
+        }
+
+        collection.insert_one(LinksData)
+        return jsonify({'message': 'Link uploaded successfully'}), 201
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+@app.route('/get-contactlinks', methods=['GET'])
+def get_contactlinks():
+    try:
+        links = list(collection.find({"type": "LinksData"}))
+        return jsonify({
+            "links": [{
+                "id": l["id"],
+                "link": l["links"],
+                "imageBase64": l["linkimage"]
+            } for l in links]
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/form', methods=['POST'])
+def handle_form():
+    try:
+        # Get form data
+        first_name = request.form.get("first_name")
+        user_email = request.form.get("user_email")
+        textarea = request.form.get("textarea")
+        subject = request.form.get("subject", "No Subject")  # Default if subject not provided
+        
+        # Validate required fields
+        if not all([first_name, user_email, textarea]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Email configuration - using YOUR email as both sender and receiver
+        sender_email = "ssanthoshraj2730@gmail.com"
+        receiver_email = "ssanthoshraj2730@gmail.com"  # Changed to your email
+        password = "xelp pjux vkme zjzz"  # Your app password
+        
+        # Create more detailed message
+        message = f"""\
+Subject: New Contact Form Submission - {subject}
+
+From: {first_name} <{user_email}>
+
+Message:
+{textarea}
+"""
+        
+        # Send email
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, password)
+            server.sendmail(sender_email, receiver_email, message.encode('utf-8'))
+        
+        return jsonify({"message": "Email sent successfully"}), 200
+        
+    except Exception as e:
+        print(f"Error sending email: {str(e)}")
+        return jsonify({"error": "Failed to send email"}), 500
+
+@app.route('/upload-contact-info', methods=['POST'])
+def upload_contact_info():
+    try:
+        # Get data from request
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        email_image = request.files.get('email_image')
+        phone_image = request.files.get('phone_image')
+
+        if not all([email, phone]):
+            return jsonify({"error": "Email and phone required"}), 400
+
+        # Prepare image data
+        email_image_data = base64.b64encode(email_image.read()).decode('utf-8') if email_image else None
+        phone_image_data = base64.b64encode(phone_image.read()).decode('utf-8') if phone_image else None
+
+        # Delete existing contact info
+        collection.delete_many({"type": "contact_info"})
+
+        # Insert new contact info
+        contact_data = {
+            "type": "contact_info",
+            "email": email,
+            "phone": phone
+        }
+        
+        if email_image_data:
+            contact_data["email_image"] = email_image_data
+        if phone_image_data:
+            contact_data["phone_image"] = phone_image_data
+
+        collection.insert_one(contact_data)
+        
+        return jsonify({"message": "Contact info uploaded successfully"})
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/get-contact-info', methods=['GET'])
+def get_contact_info():
+    try:
+        contact_info = collection.find_one({"type": "contact_info"})
+        if not contact_info:
+            return jsonify({"error": "Contact info not found"}), 404
+        
+        response = {
+            "email": contact_info.get('email'),
+            "phone": contact_info.get('phone')
+        }
+        
+        if 'email_image' in contact_info:
+            response["email_image"] = contact_info['email_image']
+        if 'phone_image' in contact_info:
+            response["phone_image"] = contact_info['phone_image']
+        
+        return jsonify(response)
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 if __name__ == '__main__':

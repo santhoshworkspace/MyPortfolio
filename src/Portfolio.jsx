@@ -1,49 +1,12 @@
 import React, { useState, useEffect } from "react";
 import "./Navbar.css"; // Import your CSS styles
-import linkedin from './linkedin.png'
-import github from './github.png'
 import menu from './menu.png'
 import axios from "axios";
 import gmail from './gmail.png'
 import phone from './phone.png'
-import leetcode from './leetcode.png'
-import linkdown from './linked_down.png'
-import git_down from './git_down.png'
-import Project1 from './AI_not_replace.png'
-import Project3 from './E-learning.png'
-import Project2 from './Project2.png'
-const projectsData= [
-  {
-    id: 1,
-    Image:Project1,
-    title: "AI Not Replace Human",
-    description: "This website showcases AI tools and upcoming projects, emphasizing AI as a helper, not a job threat.",
-    githubLink: "https://github.com/Santhoshraj2730/webhack",
-    liveDemoLink: "https://ai-not-replace-human.netlify.app/",
-  },
-  {
-    id: 2,
-    Image:Project2,
-    title: "Project Two",
-    description: "A futuristic e-commerce interface with holographic displays, dynamic shopping carts, and a seamless shopping experience.",
-    githubLink: "https://github.com",
-    liveDemoLink: "https://live-demo.com",
-  },
-  {
-    id: 3,
-    Image:Project3,
-    title: "Project Three",
-    description: "This project allows voice-controlled coding for HTML, CSS, and JS, making web development hands-free and efficient.",
-    githubLink: "https://github.com",
-    liveDemoLink: "https://live-demo.com",
-  },
-];
-
 
 const Profile = () => {
-    const openResume = () => {
-      window.open("./assets/resume-example.pdf");
-    };
+    
   
     const goToContact = () => {
       window.location.href = "https://www.linkedin.com/in/santhoshworkspace";
@@ -64,7 +27,7 @@ const Profile = () => {
     };
   
     speakText(
-      "Welcome to the website. You can say Home, About Us, Services, projects, or Contact to navigate."
+      "Welcome to the website. You can say Home, About Me, Experience, projects, or Contact to navigate."
     );
   
     recognition.continuous = true;
@@ -82,10 +45,10 @@ const Profile = () => {
         speakText("Navigating to Home");
       } else if (command.includes("about")) {
         scrollToSection("about-us");
-        speakText("Navigating to About Us");
-      } else if (command.includes("services")) {
-        scrollToSection("services");
-        speakText("Navigating to Services");
+        speakText("Navigating to About Me");
+      } else if (command.includes("Experience")) {
+        scrollToSection("Experience");
+        speakText("Navigating to Experience");
       } else if (command.includes("projects")) {
         scrollToSection("projects");
         speakText("Navigating to projects");
@@ -126,25 +89,6 @@ const Profile = () => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Validate required fields
-    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
-      alert("Please fill in all required fields!");
-      return;
-    }
-
-    try {
-      const response = await axios.post("http://127.0.0.1:5000/store", formData);
-      alert(response.data.message);
-      setFormData({ name: "", email: "", subject: "", message: "" }); // Clear form fields
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      alert("Failed to submit the form.");
-    }
-  }
   const handleMenuToggle = () => {
     setMenuVisible(!menuVisible);
   };
@@ -256,13 +200,91 @@ const fetchProjects = async () => {
     setProjects(projectsWithImages);
   } catch (error) {
     console.error("Error fetching projects:", error);
-    // Fallback to local projects if API fails
-    setProjects(projectsData);
   }
 };
 
 useEffect(() => {
   fetchProjects();
+}, []);
+const [contactLinks, setContactLinks] = useState([]);
+
+const fetchContactLinks = async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:5000/get-contactlinks');
+    setContactLinks(response.data.links);
+  } catch (error) {
+    console.error("Error fetching contact links:", error);
+    // Fallback to default links if API fails
+  }
+};
+
+useEffect(() => {
+  fetchContactLinks();
+}, []);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  // Validate required fields
+  if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
+    alert("Please fill in all required fields!");
+    return;
+  }
+
+  try {
+    // Create FormData object for multipart/form-data
+    const formDataToSend = new FormData();
+    formDataToSend.append('first_name', formData.name);
+    formDataToSend.append('user_email', formData.email);
+    formDataToSend.append('textarea', formData.message);
+    
+    // Add subject if it exists
+    if (formData.subject) {
+      formDataToSend.append('subject', formData.subject);
+    }
+
+    const response = await axios.post("http://127.0.0.1:5000/form", formDataToSend, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    alert(response.data.message || "Form submitted successfully!");
+    setFormData({ name: "", email: "", subject: "", message: "" }); // Clear form fields
+  } catch (error) {
+    console.error("Error submitting form:", error);
+    alert(error.response?.data?.error || "Failed to submit the form.");
+  }
+};
+const [contactInfo, setContactInfo] = useState({ 
+  email: '', 
+  phone: '',
+  emailImage: '',
+  phoneImage: ''
+});
+
+useEffect(() => {
+  const fetchContactInfo = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:5000/get-contact-info');
+      setContactInfo({
+        email: response.data.email || 'santhoshrajworkspace@gmail.com',
+        phone: response.data.phone || '8610511996',
+        emailImage: response.data.email_image ? `data:image/png;base64,${response.data.email_image}` : '',
+        phoneImage: response.data.phone_image ? `data:image/png;base64,${response.data.phone_image}` : ''
+      });
+    } catch (error) {
+      console.error("Error fetching contact info:", error);
+      // Fallback to default values
+      setContactInfo({
+        email: 'santhoshrajworkspace@gmail.com',
+        phone: '8610511996',
+        emailImage: '',
+        phoneImage: ''
+      });
+    }
+  };
+  
+  fetchContactInfo();
 }, []);
   return (
     <>
@@ -279,12 +301,12 @@ useEffect(() => {
               </li>
               <li>
                 <button className="nav__link" onClick={() => scrollToSection("about-us")}>
-                  About Us
+                  About Me
                 </button>
               </li>
               <li>
-                <button className="nav__link" onClick={() => scrollToSection("services")}>
-                  Services
+                <button className="nav__link" onClick={() => scrollToSection("Experience")}>
+                  Experience
                 </button>
               </li>
               <li>
@@ -334,30 +356,24 @@ useEffect(() => {
           <a href="http://localhost:5000/download-resume" download>
   <button className="btn btn-color-2">Download CV</button>
 </a>
-          <button className="btn btn-color-2">
-            Contact Info
-          </button>
+         <button 
+  className="btn btn-color-2" 
+  onClick={() => scrollToSection("contact")}
+>
+  Contact Info
+</button>
         </div>
         <div id="socials-container">
-          <img
-            src={linkedin}
-            alt="My LinkedIn profile"
-            className="icon"
-            onClick={() => window.location.href = "https://www.linkedin.com/in/santhoshworkspace"}
-          />
-          <img
-            src={github}
-            alt="My Github profile"
-            className="icon"
-            onClick={() => window.location.href = "https://github.com/Santhoshraj2730"}
-          />
-          <img
-            src={leetcode}
-            alt="My Github profile"
-            className="icon"
-            onClick={() => window.location.href = "https://leetcode.com/u/Santhosharry2730/"}
-          />
-        </div>
+  {contactLinks.map((link) => (
+    <img
+      key={link.id}
+      src={link.imageBase64.startsWith('data:') ? link.imageBase64 : `data:image/png;base64,${link.imageBase64}`}
+      alt="Social link"
+      className="icon"
+      onClick={() => window.location.href = link.link}
+    />
+  ))}
+</div>
       </div>
     </section>
 </section>
@@ -387,10 +403,10 @@ useEffect(() => {
 
   
 </section>
-<section id="services">
-  <div className="services-section">
+<section id="Experience">
+  <div className="Experience-section">
     <h1>Experience</h1>
-    <div className="services-container">
+    <div className="Experience-container">
       {experiences.map((exp, index) => (
         <div className="service-box" key={index}>
           <div className="icon">💼</div>
@@ -441,19 +457,27 @@ useEffect(() => {
           Contact <span>Me</span>
         </h2>
         <p>
-        Feel free to reach out for collaborations, web development projects, or tech discussions. Connect with me via email or LinkedIn to explore innovative solutions together!
+        Feel free to reach out for collaborations, web development projects, or tech discussions. Connect with me via email , LinkedIn or Naukri to explore innovative solutions together!
         </p>
+        
         <div className="contact-details">
-          <div className="contact-icon">
-        <img src={gmail} className="icon"></img>
-          <p>
-          ssanthoshraj2730@gmail.com
-          </p></div>
-          <div className="contact-icon">
-          <p>
-          <img src={phone} className="icon"></img>8610511996
-          </p></div>
-        </div>
+  <div className="contact-icon">
+    {contactInfo.emailImage ? (
+      <img src={contactInfo.emailImage} className="icon" alt="Email" />
+    ) : (
+      <span className="icon-placeholder">✉️</span>
+    )}
+    <p>{contactInfo.email}</p>
+  </div>
+  <div className="contact-icon">
+    {contactInfo.phoneImage ? (
+      <img src={contactInfo.phoneImage} className="icon" alt="Phone" />
+    ) : (
+      <span className="icon-placeholder">📞</span>
+    )}
+    <p>{contactInfo.phone}</p>
+  </div>
+</div>
         <div className="social-icons">
           <a href="#" className="icon facebook">
             <i className="fab fa-facebook-f"></i>
@@ -511,29 +535,15 @@ useEffect(() => {
     </div>
 </section>
 <div className="downuse">
-<img
-            src={linkdown}
-            alt="My LinkedIn profile"
-            className="icon"
-            onClick={() => window.location.href = "https://www.linkedin.com/in/santhoshworkspace"}
-          />
-          <img
-            src={git_down}
-            alt="My LinkedIn profile"
-            className="icon"
-            onClick={() => window.location.href = "https://github.com/Santhoshraj2730"}
-          />
-          <img
-            src={leetcode}
-            alt="My LinkedIn profile"
-            className="icon"
-            onClick={() => window.location.href = "https://leetcode.com/u/Santhosharry2730/"}
-          /><img
-          src={linkedin}
-          alt="My LinkedIn profile"
-          className="icon"
-          onClick={() => window.location.href = "https://linkedin.com/"}
-        />
+  {contactLinks.map((link) => (
+    <img
+      key={link.id}
+      src={link.imageBase64.startsWith('data:') ? link.imageBase64 : `data:image/png;base64,${link.imageBase64}`}
+      alt="Social link"
+      className="icon"
+      onClick={() => window.location.href = link.link}
+    />
+  ))}
 </div>
     </>
   );
