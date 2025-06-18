@@ -1020,3 +1020,28 @@ p {
   position: sticky;
   bottom: 0;
 }
+/* Add to your CSS file */
+.company-icon {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: white;
+  padding: 5px;
+}
+
+.default-icon {
+  font-size: 40px;
+}
+
+.service-box .icon {
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80px;
+  height: 80px;
+  background: #f5f5f5;
+  border-radius: 50%;
+  margin: 0 auto 20px;
+}

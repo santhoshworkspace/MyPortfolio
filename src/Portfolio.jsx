@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "./Navbar.css"; // Import your CSS styles
-import menu from './menu.png'
 import axios from "axios";
-import gmail from './gmail.png'
-import phone from './phone.png'
 
 const Profile = () => {
-    
-  
-    const goToContact = () => {
-      window.location.href = "https://www.linkedin.com/in/santhoshworkspace";
-    };
   const [menuVisible, setMenuVisible] = useState(false);
   useEffect(() => {
     const synth = window.speechSynthesis;
@@ -25,7 +17,7 @@ const Profile = () => {
       const utterance = new SpeechSynthesisUtterance(text);
       synth.speak(utterance);
     };
-  
+    
     speakText(
       "Welcome to the website. You can say Home, About Me, Experience, projects, or Contact to navigate."
     );
@@ -39,14 +31,14 @@ const Profile = () => {
       const scrollToSection = (sectionId) => {
         document.getElementById(sectionId).scrollIntoView({ behavior: "smooth" });
       };
-  
+      console.log(command)
       if (command.includes("home")) {
         scrollToSection("home");
         speakText("Navigating to Home");
       } else if (command.includes("about")) {
         scrollToSection("about-us");
         speakText("Navigating to About Me");
-      } else if (command.includes("Experience")) {
+      } else if (command.includes("experience")) {
         scrollToSection("Experience");
         speakText("Navigating to Experience");
       } else if (command.includes("projects")) {
@@ -58,20 +50,26 @@ const Profile = () => {
       } else if (command.includes("show menu")) {
         handleMenuToggle();
         speakText("Menu opened.");
-      } else if (command.includes("close menu")) {
+      } else if (command.includes("menu")) {
         setMenuVisible(false); // Ensure menu closes
         speakText("Menu closed.");
-      }else if (command.includes("open github") || command.includes("open git")) {
-        window.location.href = "https://github.com/Santhoshraj2730";
+      }
+      else if (command.includes("git") || command.includes("open git") || command.includes("open it") || command.includes("it")) {
+        window.location.href = "https://github.com/santhoshworkspace";
         speakText("Opening GitHub");
     }
-    else if (command.includes("open linkedin")|| command.includes("open Contact")) {
+    else if (command.includes("linkedin")|| command.includes("open Contact")) {
       window.location.href = "https://www.linkedin.com/in/santhoshworkspace";
       speakText("Opening Linkedin");
-  }else if (command.includes("open leetcode")) {
-    window.location.href = "https://leetcode.com/u/Santhosharry2730/";
-    speakText("Opening Leetcode");
-}}
+  } else if (command.includes("whatsapp")|| command.includes("open whatsapp")|| command.includes("app")) {
+      window.location.href = "https://wa.me/8610511996";
+      speakText("Opening Whatsappp");
+  }// Inside your recognition.onresult handler, add this else if block:
+else if (command.includes("download cv") || command.includes("download resume") || command.includes("download")) {
+  window.location.href = "http://localhost:5000/download-resume";
+  speakText("Downloading your resume now");
+}
+}
   
     recognition.start();
   
@@ -286,6 +284,29 @@ useEffect(() => {
   
   fetchContactInfo();
 }, []);
+const [menuIcon, setMenuIcon] = useState(null);
+useEffect(() => {
+  const fetchMenuIcon = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:5000/get-smallimage/menu-icon', {
+        responseType: 'blob'
+      });
+      const imageUrl = URL.createObjectURL(response.data);
+      setMenuIcon(imageUrl);
+    } catch (error) {
+      console.error("Error fetching menu icon:", error);
+      // You can set a fallback icon here if needed
+    }
+  };
+
+  fetchMenuIcon();
+
+  return () => {
+    if (menuIcon) {
+      URL.revokeObjectURL(menuIcon);
+    }
+  };
+}, []);
   return (
     <>
       <header className="header">
@@ -324,13 +345,17 @@ useEffect(() => {
 
           <div className="nav__actions">
             <button
-              className="nav__toggle"
-              id="nav-toggle"
-              onClick={handleMenuToggle}
-              aria-label="Toggle Menu"
-            >
-             <img src={menu} alt=""   className="icon" />
-            </button>
+  className="nav__toggle"
+  id="nav-toggle"
+  onClick={handleMenuToggle}
+  aria-label="Toggle Menu"
+>
+  {menuIcon ? (
+    <img src={menuIcon} alt="Menu" className="icon" />
+  ) : (
+    <span className="icon-placeholder">☰</span>
+  )}
+</button>
           </div>
         </nav>
       </header>
@@ -351,7 +376,7 @@ useEffect(() => {
       <div className="section__text">
         <p className="section__text__p1">Hello, I'm</p>
         <h1 className="title">Santhosh Raj</h1>
-        <p className="section__text__p2">Web Developer</p>
+        <p className="section__text__p2">MERN Stack Developer </p>
         <div className="btn-container">
           <a href="http://localhost:5000/download-resume" download>
   <button className="btn btn-color-2">Download CV</button>
@@ -399,9 +424,7 @@ useEffect(() => {
               ))}
             </div>
   </div>
-</div>
-
-  
+</div>  
 </section>
 <section id="Experience">
   <div className="Experience-section">
@@ -409,7 +432,17 @@ useEffect(() => {
     <div className="Experience-container">
       {experiences.map((exp, index) => (
         <div className="service-box" key={index}>
-          <div className="icon">💼</div>
+          <div className="icon">
+            {exp.companyImage ? (
+              <img 
+                src={`data:image/png;base64,${exp.companyImage}`} 
+                alt={exp.Companyname}
+                className="company-icon"
+              />
+            ) : (
+              <span className="default-icon">💼</span>
+            )}
+          </div>
           <h3>{exp.Companyname}</h3>
           <p>{exp.ExperienceDetails}</p>
         </div>

@@ -164,39 +164,83 @@ def get_skills():
     skills = [{"title": doc['title'], "description": doc['description']} for doc in skills_docs]
     return jsonify({"skills": skills})
 
+from PIL import Image
+import io
+
 @app.route('/upload-experience', methods=['POST'])
 def post_experience():
-    experience = request.get_json()
-    if not experience or 'experience' not in experience:
-        return jsonify({"error": "Frontend request missing"}), 400
-    
-    # Clear existing experiences
-    collection.delete_many({"type": "experience"})
-    
-    # Insert new experiences
-    for exp in experience['experience']:
-        collection.insert_one({
+    try:
+        # Initialize variables
+        company_name = ''
+        experience_details = ''
+        company_image_base64 = ''
+        
+        # Check if request is JSON or form-data
+        if request.is_json:
+            data = request.get_json()
+            company_name = data.get('Companyname', '')
+            experience_details = data.get('ExperienceDetails', '')
+            company_image_base64 = data.get('companyImage', '')
+        else:
+            # Handle form-data
+            company_name = request.form.get('Companyname', '')
+            experience_details = request.form.get('ExperienceDetails', '')
+            
+            # Handle image file upload
+            image_file = request.files.get('companyImage')
+            if image_file:
+                # Resize the image to icon size (e.g., 64x64)
+                img = Image.open(image_file)
+                img.thumbnail((64, 64))  # Resize while maintaining aspect ratio
+                
+                # Convert to base64
+                buffered = io.BytesIO()
+                img.save(buffered, format="PNG")
+                company_image_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        
+        # Validate required fields
+        if not all([company_name, experience_details]):
+            return jsonify({"error": "Company name and experience details are required"}), 400
+        
+        # Store in MongoDB
+        experience_data = {
             "type": "experience",
-            "Companyname": exp['Companyname'],
-            "ExperienceDetails": exp['ExperienceDetails']
-        })
+            "Companyname": company_name,
+            "ExperienceDetails": experience_details
+        }
+        
+        if company_image_base64:
+            experience_data["companyImage"] = company_image_base64
+        
+        collection.insert_one(experience_data)
+        
+        return jsonify({"message": "Experience uploaded successfully"})
     
-    return jsonify({"message": "Experience uploaded successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/get-experience', methods=['GET'])
 def get_experience():
-    experiences = list(collection.find({"type": "experience"}))
-    if not experiences:
-        return jsonify({"error": "Experience not found"}), 404
+    try:
+        experiences = list(collection.find({"type": "experience"}))
+        if not experiences:
+            return jsonify({"error": "Experience not found"}), 404
+        
+        # Convert MongoDB documents to JSON-serializable format
+        experience_list = []
+        for exp in experiences:
+            experience_data = {
+                "Companyname": exp['Companyname'],
+                "ExperienceDetails": exp['ExperienceDetails']
+            }
+            if 'companyImage' in exp:
+                experience_data["companyImage"] = exp['companyImage']
+            experience_list.append(experience_data)
+        
+        return jsonify({"experiences": experience_list})
     
-    # Return the correct field names that match what you stored
-    experience_list = [{
-        "Companyname": doc['Companyname'],
-        "ExperienceDetails": doc['ExperienceDetails']
-    } for doc in experiences]
-    
-    return jsonify({"experiences": experience_list})
-projects = []
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 @app.route('/upload-project', methods=['POST'])
 def upload_project():
     try:
@@ -428,6 +472,52 @@ def get_contact_info():
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+# Add these routes to your existing Flask app
+
+@app.route('/upload-menu-icon', methods=['POST'])
+def upload_menu_icon():
+    """Endpoint to upload the menu icon"""
+    if 'image' not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    
+    image_file = request.files['image']
+    image_data = image_file.read()
+    
+    # Generate a unique identifier for the image
+    image_hash = hashlib.sha256(image_data).hexdigest()
+    
+    # Delete any existing menu icon first
+    collection.delete_many({"filename": "menu-icon"})
+    
+    # Store the image in MongoDB
+    collection.insert_one({
+        "hash": image_hash,
+        "data": Binary(image_data),
+        "filename": "menu-icon",  # Fixed filename for easy retrieval
+        "content_type": image_file.content_type
+    })
+    
+    return jsonify({
+        "message": "Menu icon uploaded successfully",
+        "image_id": image_hash
+    })
+
+@app.route('/get-menu-icon', methods=['GET'])
+def get_menu_icon():
+    """Endpoint to retrieve the menu icon"""
+    # Find the menu icon by its filename
+    menu_icon = collection.find_one({"filename": "menu-icon"})
+    
+    if not menu_icon:
+        return jsonify({"error": "Menu icon not found"}), 404
+    
+    # Return the image directly as binary data with proper content type
+    return send_file(
+        BytesIO(menu_icon["data"]),
+        mimetype=menu_icon.get("content_type", "image/png"),
+        as_attachment=False
+    )    
+
 if __name__ == '__main__':
 
     app.run(debug=True)
